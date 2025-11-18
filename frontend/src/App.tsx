@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { analyzeCode, generateCode, visualizeCode, generateDiagram, generateLesson, formatCode, executeCode, type CodeVisualizationResponse, type CodeDiagramResponse, type CodeExecutionResponse } from './services/api';
-import type { CodeAnalysisResponse } from './types';
+import { analyzeCode, generateCode, visualizeCode, generateDiagram, generateLesson, formatCode, executeCode, type CodeExecutionResponse } from './services/api';
+import type { Document, FeedbackItem, Achievement, CodeAnalysisResponse } from './types/app';
+import { getStarterCode, getLanguageOptions } from './constants/starterCode';
 import './App.css';
 import { 
   X, Plus, Upload, Download, Printer, Clock, 
@@ -11,152 +12,7 @@ import {
   Sparkles, AlertCircle, CheckCircle, User, Play, Network, BookOpen
 } from 'lucide-react';
 
-interface FeedbackItem {
-  id: string;
-  line: number;
-  startColumn?: number;
-  endColumn?: number;
-  type: 'error' | 'warning' | 'suggestion';
-  message: string;
-  suggestion: string;
-  severity: 'high' | 'medium' | 'low';
-  originalText?: string;
-}
-
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  unlockedAt: string;
-  category: 'milestone' | 'streak' | 'quality' | 'learning';
-}
-
-interface Document {
-  id: string;
-  title: string;
-  code: string;
-  language: string;
-  documentHistory: string[];
-  historyIndex: number;
-  feedback: FeedbackItem[];
-  visualization: CodeVisualizationResponse | null;
-  diagram: CodeDiagramResponse | null;
-  lesson: string | null;
-  aiMessages: Array<{type: 'user' | 'ai', content: string, code?: string}>;
-  scores: {
-    correctness?: number;
-    clarity?: number;
-    bestPractices?: number;
-    performance?: number;
-    overall?: number;
-  };
-  achievements: Achievement[];
-}
-
 function App() {
-  const getStarterCode = (lang: string): string => {
-    const starters: Record<string, string> = {
-      'python': `class HelloWorld:
-    def __init__(self):
-        self.message = "Hello World"
-    
-    def greet(self):
-        print(self.message)
-
-# Create an instance and call the method
-obj = HelloWorld()
-obj.greet()`,
-      'java': `public class HelloWorld {
-    private String message;
-    
-    public HelloWorld() {
-        this.message = "Hello World";
-    }
-    
-    public void greet() {
-        System.out.println(this.message);
-    }
-    
-    public static void main(String[] args) {
-        HelloWorld obj = new HelloWorld();
-        obj.greet();
-    }
-}`,
-      'cpp': `#include <iostream>
-#include <string>
-
-class HelloWorld {
-private:
-    std::string message;
-    
-public:
-    HelloWorld() {
-        message = "Hello World";
-    }
-    
-    void greet() {
-        std::cout << message << std::endl;
-    }
-};
-
-int main() {
-    HelloWorld obj;
-    obj.greet();
-    return 0;
-}`,
-      'csharp': `using System;
-
-public class HelloWorld {
-    private string message;
-    
-    public HelloWorld() {
-        this.message = "Hello World";
-    }
-    
-    public void Greet() {
-        Console.WriteLine(this.message);
-    }
-    
-    public static void Main(string[] args) {
-        HelloWorld obj = new HelloWorld();
-        obj.Greet();
-    }
-}`,
-      'ruby': `class HelloWorld
-  def initialize
-    @message = "Hello World"
-  end
-  
-  def greet
-    puts @message
-  end
-end
-
-# Create an instance and call the method
-obj = HelloWorld.new
-obj.greet`,
-      'php': `<?php
-class HelloWorld {
-    private $message;
-    
-    public function __construct() {
-        $this->message = "Hello World";
-    }
-    
-    public function greet() {
-        echo $this->message;
-    }
-}
-
-// Create an instance and call the method
-$obj = new HelloWorld();
-$obj->greet();
-?>`
-    };
-    
-    return starters[lang] || starters['python'];
-  };
 
   // Tab system: manage multiple documents
   const createNewDocument = (title: string = 'Untitled document', lang: string = 'python'): Document => ({
@@ -805,8 +661,8 @@ $obj->greet();
     
     // Parse errors
     if (result.errors && result.errors !== 'No errors found.' && result.errors !== '[None]') {
-      const errorLines = result.errors.split('\n').filter(line => line.trim() && line !== '[None]');
-      errorLines.forEach((line, index) => {
+      const errorLines = result.errors.split('\n').filter((line: string) => line.trim() && line !== '[None]');
+      errorLines.forEach((line: string, index: number) => {
         // Try to extract line number from error message (e.g., "line 2: SyntaxError: ...")
         const lineMatch = line.match(/line\s+(\d+)/i);
         let lineNumber = index + 1; // Default to index + 1
@@ -943,8 +799,8 @@ $obj->greet();
 
     // Parse suggestions with better parsing - now handles contextual suggestions
     if (result.suggestions && result.suggestions !== 'No information provided.' && result.suggestions !== '[None]') {
-      const suggestionLines = result.suggestions.split('\n').filter(line => line.trim() && line !== '[None]');
-      suggestionLines.forEach((line) => {
+      const suggestionLines = result.suggestions.split('\n').filter((line: string) => line.trim() && line !== '[None]');
+      suggestionLines.forEach((line: string) => {
         
         // Skip lines that are just section headers or empty
         if (line.trim().match(/^(ERRORS|SUGGESTIONS|TEST_CASES|EXPLANATION|SCORE):?$/i)) {
@@ -1958,15 +1814,6 @@ $obj->greet();
     return mapping[lang] || 'python';
   };
 
-  // Get language options (only OOP languages)
-  const getLanguageOptions = () => [
-    { value: 'python', label: 'Python' },
-    { value: 'java', label: 'Java' },
-    { value: 'cpp', label: 'C++' },
-    { value: 'csharp', label: 'C#' },
-    { value: 'ruby', label: 'Ruby' },
-    { value: 'php', label: 'PHP' },
-  ];
 
   // Handle language change
   const handleLanguageChange = (newLanguage: string) => {
@@ -2033,79 +1880,86 @@ $obj->greet();
       {/* Left Sidebar */}
       <div className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
+          <div className="sidebar-title">My AI Mentor</div>
           <button 
             className="close-sidebar-btn"
             onClick={() => setSidebarOpen(false)}
+            title="Close sidebar"
           >
-            <X size={16} />
-            Close
+            <X size={20} />
           </button>
-          <div className="sidebar-title">My AI Mentor</div>
         </div>
 
-        <div className="sidebar-section">
-          <h3>DOCUMENT</h3>
-          <button className="sidebar-btn" onClick={handleNewDocument}>
-            <Plus size={16} />
-            New document
-          </button>
-          <button className="sidebar-btn" onClick={handleUploadFile}>
-            <Upload size={16} />
-            Upload file
-          </button>
-          <button className="sidebar-btn" onClick={handleDownload}>
-            <Download size={16} />
-            Download
-          </button>
-          <button className="sidebar-btn" onClick={handlePrint}>
-            <Printer size={16} />
-            Print
-          </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-            accept=".py,.rb,.php,.java,.cpp,.c,.cs,.go,.rs,.txt"
-          />
-        </div>
+        <div className="sidebar-content">
+          <div className="sidebar-section">
+            <h3>DOCUMENT</h3>
+            <div className="sidebar-btn-group">
+              <button className="sidebar-btn" onClick={handleNewDocument}>
+                <Plus size={16} />
+                <span>New document</span>
+              </button>
+              <button className="sidebar-btn" onClick={handleUploadFile}>
+                <Upload size={16} />
+                <span>Upload file</span>
+              </button>
+              <button className="sidebar-btn" onClick={handleDownload}>
+                <Download size={16} />
+                <span>Download</span>
+              </button>
+              <button className="sidebar-btn" onClick={handlePrint}>
+                <Printer size={16} />
+                <span>Print</span>
+              </button>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+              accept=".py,.rb,.php,.java,.cpp,.c,.cs,.go,.rs,.txt"
+            />
+          </div>
 
-        <div className="sidebar-section">
-          <h3>EDIT</h3>
-          <button 
-            className="sidebar-btn" 
-            onClick={handleUndo} 
-            disabled={historyIndex === 0}
-            title={`Undo (${historyIndex}/${documentHistory.length - 1})`}
-          >
-            <Undo2 size={16} />
-            Undo
-          </button>
-          <button 
-            className="sidebar-btn" 
-            onClick={handleRedo} 
-            disabled={historyIndex === documentHistory.length - 1}
-            title={`Redo (${historyIndex}/${documentHistory.length - 1})`}
-          >
-            <Redo2 size={16} />
-            Redo
-          </button>
-          <button className="sidebar-btn" onClick={handleCut}>
-            <Scissors size={16} />
-            Cut
-          </button>
-          <button className="sidebar-btn" onClick={handleCopy}>
-            <Copy size={16} />
-            Copy
-          </button>
-          <button className="sidebar-btn" onClick={handlePaste}>
-            <Clipboard size={16} />
-            Paste
-          </button>
-          <button className="sidebar-btn" onClick={handleSelectAll}>
-            <Square size={16} />
-            Select all
-          </button>
+          <div className="sidebar-section">
+            <h3>EDIT</h3>
+            <div className="sidebar-btn-group">
+              <button 
+                className="sidebar-btn" 
+                onClick={handleUndo} 
+                disabled={historyIndex === 0}
+                title={`Undo (${historyIndex}/${documentHistory.length - 1})`}
+              >
+                <Undo2 size={16} />
+                <span>Undo</span>
+              </button>
+              <button 
+                className="sidebar-btn" 
+                onClick={handleRedo} 
+                disabled={historyIndex === documentHistory.length - 1}
+                title={`Redo (${historyIndex}/${documentHistory.length - 1})`}
+              >
+                <Redo2 size={16} />
+                <span>Redo</span>
+              </button>
+              <div className="sidebar-divider"></div>
+              <button className="sidebar-btn" onClick={handleCut}>
+                <Scissors size={16} />
+                <span>Cut</span>
+              </button>
+              <button className="sidebar-btn" onClick={handleCopy}>
+                <Copy size={16} />
+                <span>Copy</span>
+              </button>
+              <button className="sidebar-btn" onClick={handlePaste}>
+                <Clipboard size={16} />
+                <span>Paste</span>
+              </button>
+              <button className="sidebar-btn" onClick={handleSelectAll}>
+                <Square size={16} />
+                <span>Select all</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

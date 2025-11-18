@@ -10,8 +10,8 @@ import traceback
 
 from database import get_db, init_db, CodeSubmission
 from schemas import CodeAnalysisRequest, CodeAnalysisResponse, SubmissionHistory, CodeGenerationRequest, CodeGenerationResponse, CodeVisualizationRequest, CodeVisualizationResponse, CodeDiagramRequest, CodeDiagramResponse, CodeLessonRequest, CodeLessonResponse, CodeFormatRequest, CodeFormatResponse, CodeExecutionRequest, CodeExecutionResponse
-from ai_service import analyze_code, generate_code, visualize_code, generate_diagram, generate_lesson, format_code
-from code_executor import execute_code
+from services.ai_service import analyze_code, generate_code, visualize_code, generate_diagram, generate_lesson, format_code
+from services.code_executor import execute_code
 from config import get_settings
 
 settings = get_settings()
