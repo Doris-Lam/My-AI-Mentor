@@ -3053,6 +3053,231 @@ body {
   padding: 24px;
 }
 
+/* Share Modal */
+.share-modal {
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+.share-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+.share-modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.share-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 24px;
+}
+
+.share-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 20px;
+  color: var(--gray-600);
+}
+
+.share-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--primary-600);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.share-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  text-align: center;
+  color: var(--red-600);
+}
+
+.share-error svg {
+  color: var(--red-500);
+}
+
+.share-error p {
+  margin: 0;
+  color: var(--gray-700);
+}
+
+.share-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.share-icon-wrapper {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-100);
+  border-radius: 50%;
+  color: var(--primary-600);
+}
+
+.share-icon-wrapper .check-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: white;
+  border-radius: 50%;
+  color: var(--green-500);
+  border: 2px solid white;
+}
+
+.share-description {
+  text-align: center;
+  color: var(--gray-700);
+  font-size: 15px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.share-url-container {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.share-url-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  cursor: text;
+}
+
+.share-url-input:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  background: white;
+}
+
+.copy-share-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  background: var(--primary-600) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.copy-share-btn:hover {
+  background: var(--primary-700) !important;
+  color: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.copy-share-btn:active,
+.copy-share-btn:focus,
+.copy-share-btn:focus-visible,
+.copy-share-btn:focus-within {
+  background: var(--primary-600) !important;
+  color: white !important;
+  transform: translateY(0);
+  outline: none !important;
+  box-shadow: none;
+}
+
+.copy-share-btn.copied {
+  background: var(--primary-600) !important;
+  color: white !important;
+}
+
+.copy-share-btn.copied:hover {
+  background: var(--primary-700) !important;
+  color: white !important;
+}
+
+.copy-share-btn.copied:active,
+.copy-share-btn.copied:focus,
+.copy-share-btn.copied:focus-visible,
+.copy-share-btn.copied:focus-within {
+  background: var(--primary-600) !important;
+  color: white !important;
+  transform: translateY(0);
+  outline: none !important;
+  box-shadow: none;
+}
+
+.share-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--blue-50);
+  border-radius: var(--border-radius);
+  color: var(--blue-700);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.share-info svg {
+  flex-shrink: 0;
+  color: var(--blue-500);
+}
+
+.retry-btn {
+  padding: 8px 16px;
+  background: var(--primary-600);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: var(--primary-700);
+}
+
 .output-loading {
   display: flex;
   flex-direction: column;

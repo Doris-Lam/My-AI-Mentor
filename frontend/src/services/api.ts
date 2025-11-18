@@ -130,3 +130,32 @@ export const executeCode = async (request: CodeExecutionRequest): Promise<CodeEx
   return response.data;
 };
 
+export interface ShareCodeRequest {
+  code: string;
+  language: string;
+  title?: string;
+}
+
+export interface ShareCodeResponse {
+  share_id: string;
+  share_url: string;
+  expires_at?: string;
+}
+
+export interface SharedCodeResponse {
+  code: string;
+  language: string;
+  title?: string;
+  created_at: string;
+}
+
+export const shareCode = async (request: ShareCodeRequest): Promise<ShareCodeResponse> => {
+  const response = await api.post<ShareCodeResponse>('/api/share', request);
+  return response.data;
+};
+
+export const getSharedCode = async (shareId: string): Promise<SharedCodeResponse> => {
+  const response = await api.get<SharedCodeResponse>(`/api/share/${shareId}`);
+  return response.data;
+};
+

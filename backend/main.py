@@ -9,12 +9,17 @@ import uvicorn
 import traceback
 
 from database import get_db, init_db, CodeSubmission
-from schemas import CodeAnalysisRequest, CodeAnalysisResponse, SubmissionHistory, CodeGenerationRequest, CodeGenerationResponse, CodeVisualizationRequest, CodeVisualizationResponse, CodeDiagramRequest, CodeDiagramResponse, CodeLessonRequest, CodeLessonResponse, CodeFormatRequest, CodeFormatResponse, CodeExecutionRequest, CodeExecutionResponse
+from schemas import CodeAnalysisRequest, CodeAnalysisResponse, SubmissionHistory, CodeGenerationRequest, CodeGenerationResponse, CodeVisualizationRequest, CodeVisualizationResponse, CodeDiagramRequest, CodeDiagramResponse, CodeLessonRequest, CodeLessonResponse, CodeFormatRequest, CodeFormatResponse, CodeExecutionRequest, CodeExecutionResponse, ShareCodeRequest, ShareCodeResponse, SharedCodeResponse
 from services.ai_service import analyze_code, generate_code, visualize_code, generate_diagram, generate_lesson, format_code
 from services.code_executor import execute_code
 from config import get_settings
+import secrets
+from datetime import datetime, timedelta
 
 settings = get_settings()
+
+# In-memory store for shared code (in production, use a database or Redis)
+shared_code_store: dict[str, dict] = {}
 
 
 @asynccontextmanager
@@ -348,6 +353,107 @@ async def execute_code_endpoint(request: CodeExecutionRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error executing code: {str(e)}"
+        )
+
+
+@app.post("/api/share", response_model=ShareCodeResponse)
+async def share_code_endpoint(request: ShareCodeRequest):
+    """
+    Share code and generate a shareable link.
+    """
+    if not request.code.strip():
+        raise HTTPException(status_code=400, detail="Code cannot be empty")
+    
+    try:
+        # Generate a unique share ID
+        share_id = secrets.token_urlsafe(16)
+        
+        # Store the shared code (expires in 30 days)
+        expires_at = datetime.utcnow() + timedelta(days=30)
+        shared_code_store[share_id] = {
+            "code": request.code,
+            "language": request.language,
+            "title": request.title,
+            "created_at": datetime.utcnow(),
+            "expires_at": expires_at
+        }
+        
+        # Generate share URL (frontend will construct the full URL)
+        # Return share_id and let frontend construct the URL
+        share_url = f"{share_id}"  # Frontend will prepend the base URL
+        
+        return ShareCodeResponse(
+            share_id=share_id,
+            share_url=share_url,
+            expires_at=expires_at
+        )
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in share_code_endpoint: {str(e)}")
+        print(f"Traceback: {error_trace}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error sharing code: {str(e)}"
+        )
+
+
+@app.get("/api/share/{share_id}", response_model=SharedCodeResponse)
+async def get_shared_code(share_id: str):
+    """
+    Retrieve shared code by share ID.
+    """
+    if share_id not in shared_code_store:
+        raise HTTPException(status_code=404, detail="Shared code not found or expired")
+    
+    shared_data = shared_code_store[share_id]
+    
+    # Check if expired
+    if shared_data["expires_at"] < datetime.utcnow():
+        del shared_code_store[share_id]
+        raise HTTPException(status_code=404, detail="Shared code has expired")
+    
+    return SharedCodeResponse(
+        code=shared_data["code"],
+        language=shared_data["language"],
+        title=shared_data.get("title"),
+        created_at=shared_data["created_at"]
+    )
+
+
+@app.get("/share/{share_id}")
+async def share_page(share_id: str):
+    """
+    HTML page to display shared code (for easy viewing).
+    """
+    try:
+        if share_id not in shared_code_store:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Shared code not found or expired"}
+            )
+        
+        shared_data = shared_code_store[share_id]
+        
+        # Check if expired
+        if shared_data["expires_at"] < datetime.utcnow():
+            del shared_code_store[share_id]
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Shared code has expired"}
+            )
+        
+        # Return JSON for frontend to handle
+        return JSONResponse(content={
+            "code": shared_data["code"],
+            "language": shared_data["language"],
+            "title": shared_data.get("title"),
+            "created_at": shared_data["created_at"].isoformat()
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
         )
 
 

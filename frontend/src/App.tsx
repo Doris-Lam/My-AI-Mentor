@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { analyzeCode, generateCode, visualizeCode, generateDiagram, generateLesson, formatCode, executeCode, type CodeExecutionResponse } from './services/api';
+import { analyzeCode, generateCode, visualizeCode, generateDiagram, generateLesson, formatCode, executeCode, shareCode, getSharedCode, type CodeExecutionResponse } from './services/api';
 import type { Document, FeedbackItem, Achievement, CodeAnalysisResponse } from './types/app';
 import { getStarterCode, getLanguageOptions } from './constants/starterCode';
 import './App.css';
@@ -9,7 +9,7 @@ import {
   Undo2, Redo2, Scissors, Copy, Clipboard, Square,
   Menu, Search, BarChart3,
   ChevronRight, ChevronLeft, MessageSquare, Code, Search as SearchIcon, Replace,
-  Sparkles, AlertCircle, CheckCircle, User, Play, Network, BookOpen
+  Sparkles, AlertCircle, CheckCircle, User, Play, Network, BookOpen, Share2
 } from 'lucide-react';
 
 function App() {
@@ -54,6 +54,10 @@ function App() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('Untitled document');
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string>('');
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [useContext, setUseContext] = useState(false);
@@ -359,6 +363,51 @@ function App() {
       aiMessagesRef.current.scrollTop = aiMessagesRef.current.scrollHeight;
     }
   }, [aiMessages, isGenerating]);
+
+  // Load shared code from URL on mount
+  useEffect(() => {
+    const loadSharedCode = async () => {
+      // Check for share ID in URL (e.g., /share/abc123 or ?share=abc123)
+      const urlParams = new URLSearchParams(window.location.search);
+      const shareId = urlParams.get('share');
+      
+      // Also check if URL path contains /share/
+      const pathMatch = window.location.pathname.match(/\/share\/([^\/]+)/);
+      const pathShareId = pathMatch ? pathMatch[1] : null;
+      
+      const finalShareId = shareId || pathShareId;
+      
+      if (finalShareId) {
+        try {
+          const sharedData = await getSharedCode(finalShareId);
+          
+          // Map backend language to frontend language format
+          const frontendLanguage = getFrontendLanguage(sharedData.language);
+          
+          // Create a new document with the shared code
+          const newDoc = createNewDocument(
+            sharedData.title || 'Shared Code',
+            frontendLanguage
+          );
+          newDoc.code = sharedData.code;
+          newDoc.documentHistory = [sharedData.code];
+          
+          setDocuments([newDoc]);
+          setActiveDocumentIndex(0);
+          
+          // Clean up URL - remove share parameter but keep the pathname
+          const url = new URL(window.location.href);
+          url.searchParams.delete('share');
+          window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+        } catch (err: any) {
+          console.error('Error loading shared code:', err);
+          setError(err.response?.data?.detail || 'Failed to load shared code. The link may have expired.');
+        }
+      }
+    };
+    
+    loadSharedCode();
+  }, []); // Only run on mount
 
   // Render Mermaid diagram when diagram data changes
   useEffect(() => {
@@ -1366,6 +1415,61 @@ function App() {
     }
   };
 
+  const handleShare = async () => {
+    if (!code.trim()) {
+      setError('Cannot share empty code. Please add some code first.');
+      return;
+    }
+
+    setIsSharing(true);
+    setShareCopied(false);
+    setError(null);
+    setShareModalOpen(true);
+
+    try {
+      const backendLanguage = getBackendLanguage(language);
+      const result = await shareCode({
+        code: code.trim(),
+        language: backendLanguage,
+        title: documentTitle
+      });
+
+      // Construct the full share URL using the current origin
+      // Use base pathname (remove any existing query params)
+      const basePath = window.location.pathname;
+      const fullShareUrl = `${window.location.origin}${basePath}?share=${result.share_id}`;
+      setShareUrl(fullShareUrl);
+      
+      // Auto-copy to clipboard
+      try {
+        await navigator.clipboard.writeText(fullShareUrl);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 3000);
+      } catch (clipboardErr) {
+        console.error('Failed to copy to clipboard:', clipboardErr);
+      }
+    } catch (err: any) {
+      console.error('Share error:', err);
+      setError(err.response?.data?.detail || 'Failed to share code. Please try again.');
+      setShareModalOpen(false);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    if (shareUrl) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 3000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        setError('Failed to copy link to clipboard');
+      }
+    }
+  };
+
 
   // Edit actions
   const handleUndo = () => {
@@ -1814,6 +1918,19 @@ function App() {
     return mapping[lang] || 'python';
   };
 
+  const getFrontendLanguage = (backendLang: string): string => {
+    // Map backend language back to frontend language format
+    const mapping: Record<string, string> = {
+      'python': 'python',
+      'java': 'java',
+      'cpp': 'cpp',
+      'csharp': 'csharp',
+      'ruby': 'ruby',
+      'php': 'php',
+    };
+    return mapping[backendLang] || 'python';
+  };
+
 
   // Handle language change
   const handleLanguageChange = (newLanguage: string) => {
@@ -1909,6 +2026,10 @@ function App() {
               <button className="sidebar-btn" onClick={handlePrint}>
                 <Printer size={16} />
                 <span>Print</span>
+              </button>
+              <button className="sidebar-btn" onClick={handleShare}>
+                <Share2 size={16} />
+                <span>Share</span>
               </button>
             </div>
             <input
@@ -2859,6 +2980,72 @@ function App() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {shareModalOpen && (
+        <div className="modal-overlay" onClick={() => setShareModalOpen(false)}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="share-modal-header">
+              <h2>Share Code</h2>
+              <button className="close-modal-btn" onClick={() => setShareModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="share-modal-content">
+              {isSharing ? (
+                <div className="share-loading">
+                  <div className="spinner"></div>
+                  <p>Generating share link...</p>
+                </div>
+              ) : error ? (
+                <div className="share-error">
+                  <AlertCircle size={20} />
+                  <p>{error}</p>
+                  <button className="retry-btn" onClick={handleShare}>
+                    Retry
+                  </button>
+                </div>
+              ) : shareUrl ? (
+                <div className="share-success">
+                  <p className="share-description">
+                    Your code has been shared! Copy the link below to share with others.
+                  </p>
+                  <div className="share-url-container">
+                    <input
+                      type="text"
+                      readOnly
+                      value={shareUrl}
+                      className="share-url-input"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      className={`copy-share-btn ${shareCopied ? 'copied' : ''}`}
+                      onClick={handleCopyShareLink}
+                      title="Copy link"
+                    >
+                      {shareCopied ? (
+                        <>
+                          <CheckCircle size={16} />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={16} />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="share-info">
+                    <AlertCircle size={16} />
+                    <span>This link will expire in 30 days</span>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

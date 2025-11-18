@@ -105,3 +105,22 @@ class SubmissionHistory(BaseModel):
     class Config:
         from_attributes = True
 
+
+class ShareCodeRequest(BaseModel):
+    code: str
+    language: str
+    title: Optional[str] = None
+
+
+class ShareCodeResponse(BaseModel):
+    share_id: str
+    share_url: str
+    expires_at: Optional[datetime] = None
+
+
+class SharedCodeResponse(BaseModel):
+    code: str
+    language: str
+    title: Optional[str] = None
+    created_at: datetime
+
