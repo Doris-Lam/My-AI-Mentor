@@ -328,7 +328,7 @@ Open your browser and navigate to **http://localhost:5173** to start using AI Co
 
 ---
 
-## 📖 How to Use AI Coding Mentor
+## How to Use AI Coding Mentor
 
 ### Basic Workflow
 
