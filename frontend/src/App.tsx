@@ -9,7 +9,8 @@ import {
   Undo2, Redo2, Scissors, Copy, Clipboard, Square,
   Menu, Search, BarChart3,
   ChevronRight, ChevronLeft, MessageSquare, Code, Search as SearchIcon, Replace,
-  Sparkles, AlertCircle, CheckCircle, User, Play, Network, BookOpen, Share2
+  Sparkles, AlertCircle, CheckCircle, User, Play, Network, BookOpen, Share2,
+  Moon, Sun
 } from 'lucide-react';
 
 function App() {
@@ -61,6 +62,10 @@ function App() {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [useContext, setUseContext] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   // Helper functions to get/set active document
   const getActiveDocument = (): Document => documents[activeDocumentIndex] || documents[0];
@@ -409,6 +414,21 @@ function App() {
     loadSharedCode();
   }, []); // Only run on mount
 
+  // Sanitize Mermaid diagram code to fix common syntax issues
+  const sanitizeMermaidCode = (code: string): string => {
+    if (!code) return code;
+    
+    // Fix quotes inside node labels: [Return "Positive"] -> ["Return Positive"]
+    // This regex finds patterns like [Label "text"] and wraps the entire label in quotes
+    let sanitized = code.replace(/\[([^\]]*)"([^"]*)"([^\]]*)\]/g, (_match, before, quoted, after) => {
+      // Remove quotes and combine the parts, then wrap entire label in quotes
+      const label = (before + quoted + after).trim();
+      return `["${label}"]`;
+    });
+    
+    return sanitized;
+  };
+
   // Render Mermaid diagram when diagram data changes
   useEffect(() => {
     if (diagram && diagram.diagram_code && !diagram.diagram_code.includes('Error[Error generating diagram]')) {
@@ -433,7 +453,7 @@ function App() {
           // Initialize mermaid (safe to call multiple times)
           mermaid.default.initialize({
             startOnLoad: false,
-            theme: 'default',
+            theme: darkMode ? 'dark' : 'default',
             securityLevel: 'loose',
             flowchart: {
               useMaxWidth: true,
@@ -457,9 +477,12 @@ function App() {
           // Create a unique ID for this diagram
           const diagramId = `mermaid-diagram-${Date.now()}`;
           
+          // Sanitize the diagram code before rendering
+          const sanitizedCode = sanitizeMermaidCode(diagram.diagram_code);
+          
           // Render the diagram directly using the render method
           try {
-            const result = await mermaid.default.render(diagramId, diagram.diagram_code);
+            const result = await mermaid.default.render(diagramId, sanitizedCode);
             
             if (!result || !result.svg) {
               throw new Error('Mermaid render returned no SVG');
@@ -485,9 +508,9 @@ function App() {
             }
             
             // Show the generated diagram code for debugging
-            const codePreview = diagram.diagram_code.length > 500 
-              ? diagram.diagram_code.substring(0, 500) + '...' 
-              : diagram.diagram_code;
+            const codePreview = sanitizeMermaidCode(diagram.diagram_code).length > 500 
+              ? sanitizeMermaidCode(diagram.diagram_code).substring(0, 500) + '...' 
+              : sanitizeMermaidCode(diagram.diagram_code);
             
             diagramRef.current.innerHTML = `
               <div class="diagram-error">
@@ -516,7 +539,7 @@ function App() {
       container.innerHTML = diagramSvgRef.current;
       diagramRef.current.appendChild(container);
     }
-  }, [diagram]);
+  }, [diagram, darkMode]);
 
 
   // Load saved data from localStorage on mount
@@ -532,6 +555,19 @@ function App() {
       updateActiveDocument({ achievements: JSON.parse(savedAchievements) });
     }
   }, []);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
+    document.documentElement.classList.toggle('dark-mode', newDarkMode);
+  };
+
+  // Apply dark mode class on mount and when darkMode changes
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark-mode', darkMode);
+  }, [darkMode]);
 
 
   // Initialize history with current code
@@ -1945,7 +1981,7 @@ function App() {
   };
 
   return (
-    <div className="grammarly-app">
+    <div className={`grammarly-app ${darkMode ? 'dark-mode' : ''}`}>
       {/* Document Tabs */}
       <div className="document-tabs">
         {documents.map((doc, index) => (
@@ -2078,6 +2114,20 @@ function App() {
               <button className="sidebar-btn" onClick={handleSelectAll}>
                 <Square size={16} />
                 <span>Select all</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="sidebar-section">
+            <h3>SETTINGS</h3>
+            <div className="sidebar-btn-group">
+              <button 
+                className="sidebar-btn" 
+                onClick={toggleDarkMode}
+                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+                <span>{darkMode ? 'Light mode' : 'Dark mode'}</span>
               </button>
             </div>
           </div>
@@ -2223,7 +2273,7 @@ function App() {
                 value={code}
                 onChange={handleEditorChange}
                 onMount={handleEditorDidMount}
-                theme="vs-light"
+                theme={darkMode ? "vs-dark" : "vs-light"}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,

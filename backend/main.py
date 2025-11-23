@@ -3,18 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 import uvicorn
 import traceback
+import secrets
+import sys
 
 from database import get_db, init_db, CodeSubmission
 from schemas import CodeAnalysisRequest, CodeAnalysisResponse, SubmissionHistory, CodeGenerationRequest, CodeGenerationResponse, CodeVisualizationRequest, CodeVisualizationResponse, CodeDiagramRequest, CodeDiagramResponse, CodeLessonRequest, CodeLessonResponse, CodeFormatRequest, CodeFormatResponse, CodeExecutionRequest, CodeExecutionResponse, ShareCodeRequest, ShareCodeResponse, SharedCodeResponse
 from services.ai_service import analyze_code, generate_code, visualize_code, generate_diagram, generate_lesson, format_code
 from services.code_executor import execute_code
 from config import get_settings
-import secrets
-from datetime import datetime, timedelta
 
 settings = get_settings()
 
@@ -31,7 +31,6 @@ async def lifespan(app: FastAPI):
         print("Database initialized successfully")
     except Exception as e:
         # Log the error but don't fail startup - database is optional
-        import sys
         print(f"Warning: Database initialization failed (non-fatal): {str(e)}", file=sys.stderr)
         print("The application will continue but database features may not work.", file=sys.stderr)
         # Don't re-raise the exception - allow the app to start without database
@@ -149,10 +148,8 @@ async def analyze_code_endpoint(
             created_at = submission.created_at
         except Exception as db_error:
             # Database error is non-fatal - log and continue
-            import sys
             print(f"Database error (non-fatal): {str(db_error)}", file=sys.stderr)
             submission_id = 0
-            from datetime import datetime
             created_at = datetime.utcnow()
         
         return CodeAnalysisResponse(
@@ -170,7 +167,6 @@ async def analyze_code_endpoint(
             created_at=created_at
         )
     except Exception as e:
-        import traceback
         error_trace = traceback.format_exc()
         print(f"Error in analyze_code_endpoint: {str(e)}")
         print(f"Traceback: {error_trace}")
@@ -247,7 +243,6 @@ async def visualize_code_endpoint(request: CodeVisualizationRequest):
             flow_diagram=result.get("flow_diagram")
         )
     except Exception as e:
-        import traceback
         error_trace = traceback.format_exc()
         print(f"Error in visualize_code_endpoint: {str(e)}")
         print(f"Traceback: {error_trace}")
@@ -275,7 +270,6 @@ async def generate_diagram_endpoint(request: CodeDiagramRequest):
             explanation=result.get("explanation", "")
         )
     except Exception as e:
-        import traceback
         error_trace = traceback.format_exc()
         print(f"Error in generate_diagram_endpoint: {str(e)}")
         print(f"Traceback: {error_trace}")
@@ -302,7 +296,6 @@ async def generate_lesson_endpoint(request: CodeLessonRequest):
             concepts=result.get("concepts", [])
         )
     except Exception as e:
-        import traceback
         error_trace = traceback.format_exc()
         print(f"Error in generate_lesson_endpoint: {str(e)}")
         print(f"Traceback: {error_trace}")
@@ -324,7 +317,6 @@ async def format_code_endpoint(request: CodeFormatRequest):
         result = await format_code(request.code, request.language)
         return CodeFormatResponse(**result)
     except Exception as e:
-        import traceback
         error_trace = traceback.format_exc()
         print(f"Error in format_code_endpoint: {str(e)}")
         print(f"Traceback: {error_trace}")
@@ -346,7 +338,6 @@ async def execute_code_endpoint(request: CodeExecutionRequest):
         result = execute_code(request.code, request.language)
         return CodeExecutionResponse(**result)
     except Exception as e:
-        import traceback
         error_trace = traceback.format_exc()
         print(f"Error in execute_code_endpoint: {str(e)}")
         print(f"Traceback: {error_trace}")
@@ -388,7 +379,6 @@ async def share_code_endpoint(request: ShareCodeRequest):
             expires_at=expires_at
         )
     except Exception as e:
-        import traceback
         error_trace = traceback.format_exc()
         print(f"Error in share_code_endpoint: {str(e)}")
         print(f"Traceback: {error_trace}")
