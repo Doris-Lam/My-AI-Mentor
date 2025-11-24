@@ -702,7 +702,8 @@ ai-mentor-nov16/
 │   ├── services/                 # Business logic services
 │   │   ├── __init__.py
 │   │   ├── ai_service.py        # AI integration with Gemini
-│   │   └── code_executor.py     # Safe code execution
+│   │   ├── code_executor.py     # Safe code execution
+│   │   └── metrics_service.py   # Code metrics calculation
 │   ├── main.py                  # FastAPI application entry point
 │   ├── config.py                # Configuration management
 │   ├── database.py              # Database models and connection
@@ -712,9 +713,12 @@ ai-mentor-nov16/
 │
 ├── frontend/                     # React frontend
 │   ├── node_modules/            # Node dependencies (gitignored)
+│   ├── dist/                    # Build output (gitignored)
 │   ├── public/                  # Static assets
 │   │   └── vite.svg
 │   ├── src/
+│   │   ├── components/          # React components
+│   │   │   └── MetricsDashboard.tsx  # Code metrics dashboard
 │   │   ├── constants/           # Constants and configuration
 │   │   │   └── starterCode.ts  # Language starter templates
 │   │   ├── services/            # API service layer
@@ -754,7 +758,7 @@ ai-mentor-nov16/
 
 #### **Frontend**
 
-- **`App.tsx`** - Main React component (3100+ lines) containing:
+- **`App.tsx`** - Main React component (3135 lines) containing:
   - Document/tab management
   - Monaco editor integration
   - AI feedback display
