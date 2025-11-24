@@ -11,9 +11,10 @@ import secrets
 import sys
 
 from database import get_db, init_db, CodeSubmission
-from schemas import CodeAnalysisRequest, CodeAnalysisResponse, SubmissionHistory, CodeGenerationRequest, CodeGenerationResponse, CodeVisualizationRequest, CodeVisualizationResponse, CodeDiagramRequest, CodeDiagramResponse, CodeLessonRequest, CodeLessonResponse, CodeFormatRequest, CodeFormatResponse, CodeExecutionRequest, CodeExecutionResponse, ShareCodeRequest, ShareCodeResponse, SharedCodeResponse
+from schemas import CodeAnalysisRequest, CodeAnalysisResponse, SubmissionHistory, CodeGenerationRequest, CodeGenerationResponse, CodeVisualizationRequest, CodeVisualizationResponse, CodeDiagramRequest, CodeDiagramResponse, CodeLessonRequest, CodeLessonResponse, CodeFormatRequest, CodeFormatResponse, CodeExecutionRequest, CodeExecutionResponse, ShareCodeRequest, ShareCodeResponse, SharedCodeResponse, CodeMetricsRequest, CodeMetricsResponse
 from services.ai_service import analyze_code, generate_code, visualize_code, generate_diagram, generate_lesson, format_code
 from services.code_executor import execute_code
+from services.metrics_service import calculate_code_metrics
 from config import get_settings
 
 settings = get_settings()
@@ -444,6 +445,27 @@ async def share_page(share_id: str):
         return JSONResponse(
             status_code=500,
             content={"error": str(e)}
+        )
+
+
+@app.post("/api/metrics", response_model=CodeMetricsResponse)
+async def get_code_metrics(request: CodeMetricsRequest):
+    """
+    Calculate and return code metrics for the given code.
+    """
+    if not request.code.strip():
+        raise HTTPException(status_code=400, detail="Code cannot be empty")
+    
+    try:
+        metrics = calculate_code_metrics(request.code, request.language)
+        return CodeMetricsResponse(**metrics)
+    except Exception as e:
+        error_trace = traceback.format_exc()
+        print(f"Error calculating metrics: {str(e)}")
+        print(f"Traceback: {error_trace}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error calculating metrics: {str(e)}"
         )
 
 

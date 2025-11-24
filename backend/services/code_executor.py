@@ -55,16 +55,6 @@ EXECUTION_CONFIG = {
   </PropertyGroup>
 </Project>''',
     },
-    'javascript': {
-        'command': ['node', '{file}'],
-        'extension': '.js',
-        'timeout': 10,
-    },
-    'typescript': {
-        'command': ['ts-node', '{file}'],
-        'extension': '.ts',
-        'timeout': 10,
-    },
     'go': {
         'command': ['go', 'run', '{file}'],
         'extension': '.go',

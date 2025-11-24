@@ -15,8 +15,6 @@ language_map = {
     'c': 'c',
     'csharp': 'csharp',
     'c#': 'csharp',
-    'javascript': 'javascript',
-    'typescript': 'typescript',
     'go': 'go',
     'rust': 'rust',
     'swift': 'swift',
@@ -31,8 +29,6 @@ display_names = {
     'cpp': 'C++',
     'c': 'C',
     'csharp': 'C#',
-    'javascript': 'JavaScript',
-    'typescript': 'TypeScript',
     'go': 'Go',
     'rust': 'Rust',
     'swift': 'Swift',
@@ -1028,7 +1024,7 @@ Code to format:
 ```
 
 Requirements:
-1. **Indentation**: Use consistent indentation (4 spaces for Python, 2 spaces for JavaScript/TypeScript, etc.)
+1. **Indentation**: Use consistent indentation (4 spaces for Python, etc.)
 2. **Spacing**: Add proper spacing around operators, after commas, before/after braces
 3. **Line breaks**: Break long lines appropriately (max 80-100 characters when possible)
 4. **Brackets/Braces**: Use consistent bracket/brace style for the language

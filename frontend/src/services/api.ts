@@ -159,3 +159,31 @@ export const getSharedCode = async (shareId: string): Promise<SharedCodeResponse
   return response.data;
 };
 
+export interface CodeMetricsRequest {
+  code: string;
+  language: string;
+}
+
+export interface CodeMetricsResponse {
+  total_lines: number;
+  code_lines: number;
+  comment_lines: number;
+  blank_lines: number;
+  function_count: number;
+  class_count: number;
+  import_count: number;
+  complexity: number;
+  max_nesting_depth: number;
+  code_percentage: number;
+  comment_percentage: number;
+  avg_line_length: number;
+  longest_line: number;
+  characters: number;
+  characters_no_whitespace: number;
+}
+
+export const getCodeMetrics = async (request: CodeMetricsRequest): Promise<CodeMetricsResponse> => {
+  const response = await api.post<CodeMetricsResponse>('/api/metrics', request);
+  return response.data;
+};
+

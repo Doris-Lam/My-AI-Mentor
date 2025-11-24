@@ -48,34 +48,6 @@ int main() {
     obj.greet();
     return 0;
 }`,
-    'javascript': `class HelloWorld {
-    constructor() {
-        this.message = "Hello World";
-    }
-    
-    greet() {
-        console.log(this.message);
-    }
-}
-
-// Create an instance and call the method
-const obj = new HelloWorld();
-obj.greet();`,
-    'typescript': `class HelloWorld {
-    private message: string;
-    
-    constructor() {
-        this.message = "Hello World";
-    }
-    
-    greet(): void {
-        console.log(this.message);
-    }
-}
-
-// Create an instance and call the method
-const obj = new HelloWorld();
-obj.greet();`,
     'ruby': `class HelloWorld
     def initialize
         @message = "Hello World"
@@ -171,8 +143,6 @@ class HelloWorld {
 
 export const getLanguageOptions = () => [
   { value: 'python', label: 'Python' },
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'typescript', label: 'TypeScript' },
   { value: 'java', label: 'Java' },
   { value: 'cpp', label: 'C++' },
   { value: 'c', label: 'C' },

@@ -3,6 +3,7 @@ import Editor from '@monaco-editor/react';
 import { analyzeCode, generateCode, visualizeCode, generateDiagram, generateLesson, formatCode, executeCode, shareCode, getSharedCode, type CodeExecutionResponse } from './services/api';
 import type { Document, FeedbackItem, Achievement, CodeAnalysisResponse } from './types/app';
 import { getStarterCode, getLanguageOptions } from './constants/starterCode';
+import MetricsDashboard from './components/MetricsDashboard';
 import './App.css';
 import { 
   X, Plus, Upload, Download, Printer, Clock, 
@@ -10,7 +11,7 @@ import {
   Menu, Search, BarChart3,
   ChevronRight, ChevronLeft, MessageSquare, Code, Search as SearchIcon, Replace,
   Sparkles, AlertCircle, CheckCircle, User, Play, Network, BookOpen, Share2,
-  Moon, Sun
+  Moon, Sun, Activity
 } from 'lucide-react';
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('Untitled document');
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
+  const [metricsModalOpen, setMetricsModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>('');
   const [isSharing, setIsSharing] = useState(false);
@@ -1408,12 +1410,8 @@ function App() {
       'cpp': 'cpp',
       'c': 'c',
       'csharp': 'cs',
-      'javascript': 'js',
-      'typescript': 'ts',
       'go': 'go',
       'rust': 'rs',
-      'swift': 'swift',
-      'kotlin': 'kt',
     };
     
     const extension = extensionMap[language.toLowerCase()] || 'txt';
@@ -1934,9 +1932,12 @@ function App() {
       'python': 'python',
       'java': 'java',
       'cpp': 'cpp',
+      'c': 'c',
       'csharp': 'csharp',
       'ruby': 'ruby',
       'php': 'php',
+      'go': 'go',
+      'rust': 'rust',
     };
     return mapping[lang] || 'python';
   };
@@ -1947,9 +1948,12 @@ function App() {
       'python': 'python',
       'java': 'java',
       'cpp': 'cpp',
+      'c': 'c',
       'csharp': 'csharp',
       'ruby': 'ruby',
       'php': 'php',
+      'go': 'go',
+      'rust': 'rust',
     };
     return mapping[lang] || 'python';
   };
@@ -1960,9 +1964,12 @@ function App() {
       'python': 'python',
       'java': 'java',
       'cpp': 'cpp',
+      'c': 'c',
       'csharp': 'csharp',
       'ruby': 'ruby',
       'php': 'php',
+      'go': 'go',
+      'rust': 'rust',
     };
     return mapping[backendLang] || 'python';
   };
@@ -2199,6 +2206,10 @@ function App() {
             <button className="header-btn" onClick={handleOverallScore}>
               <BarChart3 size={16} />
               Overall score
+            </button>
+            <button className="header-btn" onClick={() => setMetricsModalOpen(true)}>
+              <Activity size={16} />
+              Metrics
             </button>
           </div>
         </div>
@@ -2587,7 +2598,6 @@ function App() {
                   )}
                 </div>
               )}
-
 
               {activeTab === 'ai' && (
                 <div className="ai-chat-content">
@@ -3030,6 +3040,23 @@ function App() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Metrics Modal */}
+      {metricsModalOpen && (
+        <div className="modal-overlay" onClick={() => setMetricsModalOpen(false)}>
+          <div className="metrics-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="metrics-modal-header">
+              <h2>Code Metrics Dashboard</h2>
+              <button className="close-modal-btn" onClick={() => setMetricsModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="metrics-modal-content">
+              <MetricsDashboard code={code} language={language} darkMode={darkMode} />
             </div>
           </div>
         </div>

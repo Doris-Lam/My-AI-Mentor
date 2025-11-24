@@ -124,3 +124,26 @@ class SharedCodeResponse(BaseModel):
     title: Optional[str] = None
     created_at: datetime
 
+
+class CodeMetricsRequest(BaseModel):
+    code: str
+    language: str
+
+
+class CodeMetricsResponse(BaseModel):
+    total_lines: int
+    code_lines: int
+    comment_lines: int
+    blank_lines: int
+    function_count: int
+    class_count: int
+    import_count: int
+    complexity: int
+    max_nesting_depth: int
+    code_percentage: float
+    comment_percentage: float
+    avg_line_length: float
+    longest_line: int
+    characters: int
+    characters_no_whitespace: int
+
