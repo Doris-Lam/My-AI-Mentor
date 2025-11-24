@@ -28,8 +28,6 @@ def calculate_code_metrics(code: str, language: str) -> Dict[str, Any]:
         'rust': [r'^\s*//', r'^\s*/\*', r'^\s*\*'],
         'ruby': [r'^\s*#', r'^\s*=begin', r'^\s*=end'],
         'php': [r'^\s*//', r'^\s*#', r'^\s*/\*', r'^\s*\*'],
-        'swift': [r'^\s*//', r'^\s*/\*', r'^\s*\*'],
-        'kotlin': [r'^\s*//', r'^\s*/\*', r'^\s*\*'],
     }
     
     lang_key = language.lower()

@@ -17,8 +17,6 @@ language_map = {
     'c#': 'csharp',
     'go': 'go',
     'rust': 'rust',
-    'swift': 'swift',
-    'kotlin': 'kotlin',
 }
 
 display_names = {
@@ -31,8 +29,6 @@ display_names = {
     'csharp': 'C#',
     'go': 'Go',
     'rust': 'Rust',
-    'swift': 'Swift',
-    'kotlin': 'Kotlin',
 }
 
 # Configure Gemini (with fallback for missing API key)

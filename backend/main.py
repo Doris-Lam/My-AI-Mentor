@@ -70,7 +70,6 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler that ensures CORS headers are included"""
-    import traceback
     error_trace = traceback.format_exc()
     print(f"Unhandled exception: {str(exc)}")
     print(f"Traceback: {error_trace}")

@@ -111,11 +111,20 @@ Test your code instantly without leaving the editor:
 - **Catch runtime errors** immediately
 - **Test edge cases** on the fly
 
-Supports multiple languages: Python, JavaScript, TypeScript, Java, C++, and more.
+Supports multiple languages: Python, Java, C++, C, C#, Go, Rust, Ruby, and PHP.
+
+**Built-in Libraries & Imports:**
+All standard library modules and built-in functions are available when executing code:
+- **Python**: `import math`, `import json`, `import datetime`, etc. - All Python standard library modules work
+- **Java**: `java.util.*`, `java.lang.*`, etc. - Standard Java libraries are available
+- **C++**: `#include <iostream>`, `#include <vector>`, etc. - Standard C++ libraries work
+- **Other languages**: All built-in libraries and standard modules for each language are fully supported
+
+You can use any standard library functions without installation - they're part of the language runtime!
 
 #### **Smart Code Formatting**
 One-click code beautification that:
-- Formats according to language-specific style guides (PEP 8 for Python, Prettier for JavaScript, etc.)
+- Formats according to language-specific style guides (PEP 8 for Python, etc.)
 - Fixes indentation and spacing
 - Organizes imports
 - Applies consistent naming conventions
@@ -133,6 +142,18 @@ Gamify your learning with:
 - **History Tracking** - Review your past code and see how you've improved
 - **Score Trends** - Visualize your coding quality over time
 - **Learning Streaks** - Build consistent coding habits
+
+#### **Code Metrics Dashboard**
+Get comprehensive insights into your code with real-time metrics visualization:
+- **Code Statistics** - Total lines, code lines, comments, blank lines
+- **Structure Analysis** - Count of functions, classes, and imports
+- **Complexity Metrics** - Cyclomatic complexity and nesting depth analysis
+- **Code Distribution** - Visual breakdown of code vs comments vs blank lines
+- **Line Length Analysis** - Average and maximum line length tracking
+- **Interactive Charts** - Beautiful visualizations using Recharts library
+- **Real-time Updates** - Metrics update automatically as you type
+
+Access the Metrics Dashboard via the "Metrics" button in the header. Perfect for understanding code structure, tracking complexity, and maintaining code quality standards.
 
 #### **Code Sharing**
 Share your code with others:
@@ -159,6 +180,12 @@ The frontend is built with modern web technologies for a responsive, performant 
 - **Component Architecture** - Modular, reusable components
 - **Hooks** - Modern React patterns for state management
 - **Performance** - Optimized rendering with React's latest features
+
+#### **Recharts** (Charting Library)
+- **Interactive Charts** - Beautiful, responsive data visualizations
+- **Multiple Chart Types** - Bar charts, pie charts, line charts
+- **Real-time Updates** - Charts update automatically with data changes
+- **Theme Support** - Works seamlessly with dark/light mode
 
 #### **Monaco Editor** (VS Code's Editor)
 - **Full IDE Features** - Syntax highlighting, autocomplete, IntelliSense
@@ -194,7 +221,7 @@ The backend is a high-performance API that orchestrates AI analysis and code exe
 #### **Google Gemini AI Integration**
 - **Advanced Code Analysis** - Deep understanding of code semantics
 - **Context-Aware Suggestions** - AI considers your entire codebase
-- **Multi-language Support** - Works with Python, JavaScript, TypeScript, Java, C++, Go, Rust, and more
+- **Multi-language Support** - Works with Python, Java, C++, C, C#, Go, Rust, Ruby, and PHP
 - **Educational Explanations** - AI explains concepts, not just fixes
 - **Code Generation** - Natural language to code conversion
 
@@ -229,6 +256,16 @@ Safe code execution:
 - Output capture
 - Error handling
 - Timeout management
+- Full standard library support for all languages
+
+#### **Metrics Service** (`backend/services/metrics_service.py`)
+Code metrics calculation:
+- Line counting (code, comments, blank)
+- Function/class/import detection
+- Complexity analysis (cyclomatic complexity)
+- Nesting depth calculation
+- Code distribution analysis
+- Language-specific pattern recognition
 
 #### **API Service** (`frontend/src/services/api.ts`)
 Frontend-backend communication:
@@ -338,7 +375,7 @@ Open your browser and navigate to **http://localhost:5173** to start using AI Co
 
 2. **Select Your Language**
    - Use the language dropdown in the top toolbar
-   - Choose from Python, JavaScript, TypeScript, Java, C++, Go, Rust, and more
+   - Choose from Python, Java, C++, C, C#, Go, Rust, Ruby, or PHP
    - Each language comes with starter code templates
 
 3. **Write or Paste Your Code**
@@ -400,6 +437,25 @@ Click "Run Code" to execute your code:
 - Catch runtime errors immediately
 - Test edge cases
 - Debug interactively
+- **Use standard libraries** - All built-in modules work (e.g., `import math` in Python, `#include <iostream>` in C++)
+
+**Example with libraries:**
+```python
+import math
+import json
+
+result = math.sqrt(16)
+data = json.loads('{"key": "value"}')
+print(result, data)
+```
+
+#### **View Code Metrics**
+Click the "Metrics" button in the header to open the Code Metrics Dashboard:
+- View real-time code statistics and visualizations
+- Analyze code complexity and structure
+- Track code distribution (code vs comments)
+- Monitor line length and nesting depth
+- See interactive charts and graphs
 
 #### **AI Code Generation**
 Use the AI chat panel to generate code:
@@ -583,6 +639,30 @@ Content-Type: application/json
 
 Returns execution output, errors, and execution time.
 
+**Note**: All standard library modules are available. For example:
+- Python: `import math`, `import json`, `import datetime`, etc.
+- Java: `java.util.*`, `java.lang.*`, etc.
+- C++: Standard library headers like `<iostream>`, `<vector>`, etc.
+
+#### **Get Code Metrics**
+```http
+POST /api/metrics
+Content-Type: application/json
+
+{
+  "code": "def hello():\n    print('Hello')",
+  "language": "python"
+}
+```
+
+Returns comprehensive code metrics including:
+- Line counts (total, code, comments, blank)
+- Structure counts (functions, classes, imports)
+- Complexity metrics (cyclomatic complexity, nesting depth)
+- Code distribution percentages
+- Line length statistics
+- Character counts
+
 #### **Share Code**
 ```http
 POST /api/share
@@ -667,6 +747,7 @@ ai-mentor-nov16/
 - **`main.py`** - FastAPI application with all API endpoints, CORS configuration, and error handling
 - **`services/ai_service.py`** - Core AI service that interfaces with Google Gemini API for code analysis, generation, visualization, and lesson creation
 - **`services/code_executor.py`** - Safe code execution service with sandboxing and timeout protection
+- **`services/metrics_service.py`** - Code metrics calculation service for analyzing code structure, complexity, and statistics
 - **`config.py`** - Configuration management using Pydantic settings
 - **`database.py`** - SQLAlchemy models and database connection management
 - **`schemas.py`** - Pydantic schemas for request/response validation
@@ -685,6 +766,7 @@ ai-mentor-nov16/
 - **`services/api.ts`** - Type-safe API client for backend communication
 - **`types/app.ts`** - TypeScript interfaces for documents, feedback, achievements, etc.
 - **`constants/starterCode.ts`** - Starter code templates for different languages
+- **`components/MetricsDashboard.tsx`** - Code metrics dashboard component with interactive charts using Recharts
 
 ---
 
@@ -874,6 +956,32 @@ This project represents a journey of learning and growth. Here's what I discover
 - **Accessibility**: Making powerful tools available to everyone, regardless of skill level
 
 ---
+
+## Libraries and Dependencies
+
+### Frontend Libraries
+- **React 18** - UI framework
+- **TypeScript** - Type-safe JavaScript
+- **Monaco Editor** - VS Code editor component
+- **Recharts** - Charting library for metrics visualizations
+- **Axios** - HTTP client for API calls
+- **Lucide React** - Icon library
+- **Mermaid** - Diagram rendering
+
+### Backend Libraries
+- **FastAPI** - Modern Python web framework
+- **Google Generative AI** - Gemini AI integration
+- **SQLAlchemy** - Database ORM
+- **Pydantic** - Data validation
+- **Uvicorn** - ASGI server
+
+### Built-in Language Libraries
+When executing code, all standard library modules are available:
+- **Python**: `math`, `json`, `datetime`, `os`, `sys`, `collections`, `itertools`, etc.
+- **Java**: `java.lang.*`, `java.util.*`, `java.io.*`, etc.
+- **C++**: Standard library headers (`<iostream>`, `<vector>`, `<algorithm>`, etc.)
+- **C**: Standard C library (`<stdio.h>`, `<stdlib.h>`, `<string.h>`, etc.)
+- **Other languages**: Full standard library support for Go, Rust, Ruby, PHP, C#
 
 ## Future Vision
 
