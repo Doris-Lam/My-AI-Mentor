@@ -2,6 +2,12 @@
 
 ---
 
+## Demo!
+
+https://github.com/user-attachments/assets/cc4ec2ec-ea7a-4aa3-a782-af335d0f4cfc
+
+---
+
 ## The Story Behind AI Coding Mentor
 
 ### Inspiration: From Grammarly to Code
