@@ -288,6 +288,27 @@ Before you begin, ensure you have:
 - **Git** - Version control
 - **PostgreSQL 15+** (Optional) - For history tracking features
 
+#### Optional: Language Runtimes for Code Execution
+
+The app supports code execution in multiple languages. To execute code in a specific language, you need the corresponding runtime installed:
+
+**Required for code execution:**
+- **Python 3** - Usually pre-installed on macOS/Linux
+- **Java JDK** - For Java code execution
+- **Node.js** - Already required for frontend
+
+**Optional (install as needed):**
+- **PHP** - `brew install php` (macOS) or `apt-get install php` (Linux)
+- **Ruby** - Usually pre-installed, or `brew install ruby` (macOS)
+- **Go** - [Download from go.dev](https://go.dev/dl/)
+- **Rust** - [Install via rustup.rs](https://rustup.rs/)
+- **C/C++ Compiler** - `brew install gcc` (macOS) or `apt-get install build-essential` (Linux)
+- **.NET SDK** - [Download from Microsoft](https://dotnet.microsoft.com/download) (for C#)
+
+**Note:** The app will show helpful error messages with installation instructions if a runtime is missing when you try to execute code in that language. You don't need to install all languages - only the ones you want to use!
+
+**Quick check:** Run `./setup_languages.sh` to see which runtimes are installed and get installation commands for your OS.
+
 ### Installation
 
 #### 1. Clone the Repository
