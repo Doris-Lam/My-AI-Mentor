@@ -256,11 +256,14 @@ function App() {
 
     try {
       const backendLanguage = getBackendLanguage(language);
-      const result = await generateCode({
+      const request: { prompt: string; language: string; context?: string } = {
         prompt: userMessage,
-        language: backendLanguage,
-        context: useContext && code.trim() ? code.trim() : undefined
-      });
+        language: backendLanguage
+      };
+      if (useContext && code.trim()) {
+        request.context = code.trim();
+      }
+      const result = await generateCode(request);
       
       // Add AI response to chat
       const updatedDoc = getActiveDocument();
@@ -1736,14 +1739,41 @@ function App() {
   const handleFind = () => {
     if (editorRef.current) {
       editorRef.current.focus();
-      editorRef.current.trigger('keyboard', 'editor.action.startFindAction', null);
+      // Simulate Ctrl+F / Cmd+F keyboard shortcut
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const editorElement = editorRef.current.getDomNode();
+      if (editorElement) {
+        const event = new KeyboardEvent('keydown', {
+          key: 'f',
+          code: 'KeyF',
+          ctrlKey: !isMac,
+          metaKey: isMac,
+          bubbles: true,
+          cancelable: true
+        });
+        editorElement.dispatchEvent(event);
+      }
     }
   };
 
   const handleReplace = () => {
     if (editorRef.current) {
       editorRef.current.focus();
-      editorRef.current.trigger('keyboard', 'editor.action.startFindReplaceAction', null);
+      // Simulate Ctrl+H / Cmd+Option+F keyboard shortcut
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const editorElement = editorRef.current.getDomNode();
+      if (editorElement) {
+        const event = new KeyboardEvent('keydown', {
+          key: isMac ? 'f' : 'h',
+          code: isMac ? 'KeyF' : 'KeyH',
+          ctrlKey: !isMac,
+          metaKey: isMac,
+          altKey: isMac,
+          bubbles: true,
+          cancelable: true
+        });
+        editorElement.dispatchEvent(event);
+      }
     }
   };
 
