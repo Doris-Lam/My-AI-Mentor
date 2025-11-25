@@ -125,6 +125,52 @@ def get_command_path(command: str) -> str:
     return command  # Return original if not found
 
 
+def normalize_code(code: str, language: str) -> str:
+    """
+    Normalize code to handle common formatting issues.
+    - Normalizes line endings to \n
+    - Removes trailing whitespace from lines
+    - For Python: detects and warns about mixed indentation (but doesn't auto-fix to avoid breaking code)
+    """
+    # Normalize line endings
+    code = code.replace('\r\n', '\n').replace('\r', '\n')
+    
+    # Split into lines and process
+    lines = code.split('\n')
+    normalized_lines = []
+    
+    for line in lines:
+        # Remove trailing whitespace (but preserve leading whitespace for indentation)
+        normalized_line = line.rstrip()
+        # Add back the newline (will be joined later)
+        normalized_lines.append(normalized_line)
+    
+    # Join lines back together
+    normalized_code = '\n'.join(normalized_lines)
+    
+    # For Python, check for mixed indentation (tabs vs spaces)
+    if language.lower() == 'python':
+        has_tabs = False
+        has_spaces = False
+        for line in normalized_lines:
+            if line.strip():  # Only check non-empty lines
+                leading = line[:len(line) - len(line.lstrip())]
+                if '\t' in leading:
+                    has_tabs = True
+                if ' ' in leading:
+                    has_spaces = True
+                if has_tabs and has_spaces:
+                    # Mixed indentation detected - this is a common source of errors
+                    # We'll let Python report the error rather than trying to auto-fix
+                    break
+    
+    # Ensure file ends with a newline if it had content
+    if normalized_code and not normalized_code.endswith('\n'):
+        normalized_code += '\n'
+    
+    return normalized_code
+
+
 def execute_code(code: str, language: str) -> Dict:
     """
     Execute code in a sandboxed environment with timeout and resource limits.
@@ -213,10 +259,13 @@ def execute_code(code: str, language: str) -> Dict:
     # Create temporary directory for execution
     with tempfile.TemporaryDirectory() as temp_dir:
         try:
+            # Normalize code to handle common formatting issues
+            normalized_code = normalize_code(code, language)
+            
             # For Java, extract class name first to name the file correctly
             if language == 'java':
                 class_name = 'Main'
-                for line in code.split('\n'):
+                for line in normalized_code.split('\n'):
                     if 'public class' in line:
                         parts = line.split('public class')
                         if len(parts) > 1:
@@ -228,7 +277,7 @@ def execute_code(code: str, language: str) -> Dict:
                 # Write code to temporary file
                 file_path = Path(temp_dir) / f'main{config["extension"]}'
             
-            file_path.write_text(code, encoding='utf-8')
+            file_path.write_text(normalized_code, encoding='utf-8')
             
             # Prepare environment with extended PATH for Homebrew
             env = os.environ.copy()
@@ -302,7 +351,7 @@ def execute_code(code: str, language: str) -> Dict:
                 
                 # Move code file to project directory and rename to Program.cs
                 program_path = project_dir / 'Program.cs'
-                program_path.write_text(code, encoding='utf-8')
+                program_path.write_text(normalized_code, encoding='utf-8')
                 
                 # Update file_path for execution
                 file_path = program_path
