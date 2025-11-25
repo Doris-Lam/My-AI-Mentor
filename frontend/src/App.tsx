@@ -1737,43 +1737,137 @@ function App() {
   };
 
   const handleFind = () => {
-    if (editorRef.current) {
-      editorRef.current.focus();
-      // Simulate Ctrl+F / Cmd+F keyboard shortcut
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const editorElement = editorRef.current.getDomNode();
-      if (editorElement) {
-        const event = new KeyboardEvent('keydown', {
-          key: 'f',
-          code: 'KeyF',
-          ctrlKey: !isMac,
-          metaKey: isMac,
-          bubbles: true,
-          cancelable: true
-        });
-        editorElement.dispatchEvent(event);
+    if (!editorRef.current) return;
+    
+    const editor = editorRef.current;
+    editor.focus();
+    
+    try {
+      // Try the standard Monaco Editor action name first
+      const findAction = editor.getAction('editor.action.startFindAction');
+      if (findAction && findAction.isSupported()) {
+        findAction.run();
+        return;
       }
+    } catch (e) {
+      // Continue to fallback
+    }
+    
+    try {
+      // Fallback 1: Try the older action name
+      const findAction = editor.getAction('actions.find');
+      if (findAction && findAction.isSupported()) {
+        findAction.run();
+        return;
+      }
+    } catch (e) {
+      // Continue to fallback
+    }
+    
+    try {
+      // Fallback 2: Use editor.trigger
+      editor.trigger('keyboard', 'editor.action.startFindAction', null);
+      return;
+    } catch (e) {
+      // Continue to fallback
+    }
+    
+    try {
+      // Fallback 3: Use find controller directly
+      const findController = (editor as any)._contributions?.findController;
+      if (findController && findController.start) {
+        findController.start({
+          forceRevealReplace: false,
+          seedSearchStringFromSelection: 'none'
+        });
+        return;
+      }
+      
+      if (findController && findController._widget) {
+        findController._widget._findInput.focus();
+        return;
+      }
+    } catch (e) {
+      // Continue to last fallback
+    }
+    
+    // Last resort: try DOM manipulation
+    try {
+      const findWidget = document.querySelector('.monaco-find-widget');
+      if (findWidget) {
+        const findInput = findWidget.querySelector('input') as HTMLInputElement;
+        if (findInput) {
+          findInput.focus();
+        }
+      } else {
+        // Widget doesn't exist, try to trigger it via keyboard event
+        editor.trigger('keyboard', 'actions.find', null);
+      }
+    } catch (e) {
+      console.error('Find failed:', e);
     }
   };
 
   const handleReplace = () => {
-    if (editorRef.current) {
-      editorRef.current.focus();
-      // Simulate Ctrl+H / Cmd+Option+F keyboard shortcut
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const editorElement = editorRef.current.getDomNode();
-      if (editorElement) {
-        const event = new KeyboardEvent('keydown', {
-          key: isMac ? 'f' : 'h',
-          code: isMac ? 'KeyF' : 'KeyH',
-          ctrlKey: !isMac,
-          metaKey: isMac,
-          altKey: isMac,
-          bubbles: true,
-          cancelable: true
-        });
-        editorElement.dispatchEvent(event);
+    if (!editorRef.current) return;
+    
+    const editor = editorRef.current;
+    editor.focus();
+    
+    try {
+      // Method 1: Use the correct Monaco Editor action name
+      const replaceAction = editor.getAction('editor.action.startFindReplaceAction');
+      if (replaceAction && replaceAction.isSupported()) {
+        replaceAction.run();
+        return;
       }
+      
+      // Method 2: Use find controller with forceRevealReplace
+      const findController = (editor as any)._contributions?.findController;
+      if (findController && findController.start) {
+        findController.start({
+          forceRevealReplace: true,
+          seedSearchStringFromSelection: 'none'
+        });
+        return;
+      }
+      
+      // Method 3: Fallback - open find and toggle replace
+      const findAction = editor.getAction('editor.action.startFindAction');
+      if (findAction && findAction.isSupported()) {
+        findAction.run();
+      } else {
+        editor.trigger('keyboard', 'editor.action.startFindAction', {});
+      }
+      
+      // Wait for widget and toggle replace
+      setTimeout(() => {
+        const findController = (editor as any)._contributions?.findController;
+        if (findController?._widget) {
+          // Try to toggle replace
+          if (findController._widget._toggleReplace) {
+            findController._widget._toggleReplace();
+          } else if (findController._widget._toggleReplaceBtn) {
+            findController._widget._toggleReplaceBtn.click();
+          } else if (findController.toggleReplace) {
+            findController.toggleReplace();
+          } else {
+            // DOM fallback
+            const toggleBtn = document.querySelector(
+              '.monaco-find-widget .toggle-replace, ' +
+              '.monaco-find-widget [aria-label*="Toggle Replace"], ' +
+              '.monaco-find-widget [aria-label*="Replace"], ' +
+              '.monaco-find-widget [title*="Replace"]'
+            ) as HTMLElement;
+            if (toggleBtn) {
+              toggleBtn.click();
+            }
+          }
+        }
+      }, 100);
+      
+    } catch (e) {
+      console.error('Replace failed:', e);
     }
   };
 
