@@ -1,3 +1,25 @@
+/**
+ * Starter Code Templates
+ * 
+ * Provides starter code templates for different programming languages.
+ * These templates are shown when a user selects a language or creates a new document.
+ * 
+ * Each template demonstrates:
+ * - Object-oriented programming (classes)
+ * - Method definitions
+ * - Instance creation
+ * - Method calls
+ * 
+ * Languages supported:
+ * - Python, Java, C++, C, C#, Go, Rust, Ruby, PHP
+ */
+
+/**
+ * Get starter code template for a given language.
+ * 
+ * @param lang - Language code (python, java, cpp, etc.)
+ * @returns Starter code string for that language
+ */
 export const getStarterCode = (lang: string): string => {
   const starters: Record<string, string> = {
     'python': `class HelloWorld:

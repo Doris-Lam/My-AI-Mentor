@@ -1,12 +1,33 @@
+/**
+ * API Service Module - Backend Communication
+ * 
+ * This module provides type-safe functions for all API calls to the backend.
+ * It uses Axios for HTTP requests and TypeScript for type safety.
+ * 
+ * All functions are async and return typed responses.
+ * Error handling is done at the component level.
+ * 
+ * The API_URL is configured via environment variable VITE_API_URL
+ * or defaults to http://localhost:8000 for local development.
+ * 
+ * Features:
+ * - Type-safe request/response handling
+ * - Centralized API configuration
+ * - Consistent error handling
+ * - Easy to mock for testing
+ */
+
 import axios from 'axios';
 import type { CodeAnalysisRequest, CodeAnalysisResponse, SubmissionHistory } from '../types';
 
+// API base URL from environment variable or default to localhost
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// Create Axios instance with default configuration
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_URL,  // Base URL for all requests
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json',  // JSON content type for all requests
   },
 });
 

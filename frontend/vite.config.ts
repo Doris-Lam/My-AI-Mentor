@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true, // Allow external connections
+    host: 'localhost', // Use localhost to avoid permission issues
     port: 5173,
     watch: {
       usePolling: true, // Better for Docker/WSL

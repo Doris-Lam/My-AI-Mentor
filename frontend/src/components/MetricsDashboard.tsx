@@ -1,3 +1,40 @@
+/**
+ * Metrics Dashboard Component
+ * 
+ * Displays comprehensive code metrics and statistics in an interactive dashboard.
+ * 
+ * Features:
+ * - Real-time metrics calculation (debounced)
+ * - Interactive charts using Recharts library
+ * - Multiple visualization types (pie charts, bar charts)
+ * - Code structure analysis
+ * - Complexity metrics
+ * - Line length analysis
+ * - Dark/light mode support
+ * 
+ * Metrics Displayed:
+ * 1. Key Metrics Cards:
+ *    - Total lines, code lines, complexity, average line length
+ * 
+ * 2. Structure Cards:
+ *    - Function count, class count, import count
+ * 
+ * 3. Charts:
+ *    - Code distribution (pie chart: code vs comments vs blank)
+ *    - Code structure (bar chart: functions, classes, imports)
+ *    - Complexity metrics (bar chart: complexity vs nesting)
+ *    - Line length (bar chart: average vs longest)
+ * 
+ * 4. Additional Statistics:
+ *    - Character counts, code/comment ratios
+ * 
+ * 5. Explanation Section:
+ *    - How each metric is calculated
+ * 
+ * The component automatically fetches metrics when code changes,
+ * with a 500ms debounce to avoid excessive API calls.
+ */
+
 import { useEffect, useState } from 'react';
 import {
   BarChart,
@@ -15,9 +52,9 @@ import { getCodeMetrics, type CodeMetricsResponse } from '../services/api';
 import { Activity, Code, FileText, TrendingUp, AlertCircle, Info, Package, Download, Gauge } from 'lucide-react';
 
 interface MetricsDashboardProps {
-  code: string;
-  language: string;
-  darkMode: boolean;
+  code: string;  // The code to analyze
+  language: string;  // Programming language
+  darkMode: boolean;  // Dark mode toggle
 }
 
 const COLORS = {

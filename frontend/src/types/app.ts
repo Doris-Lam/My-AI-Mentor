@@ -1,6 +1,23 @@
+/**
+ * Application Type Definitions
+ * 
+ * This module defines TypeScript interfaces for the application's data structures.
+ * These types ensure type safety throughout the frontend codebase.
+ * 
+ * Key Types:
+ * - Document: Represents a code file/tab with all its state
+ * - FeedbackItem: Individual AI suggestion/error
+ * - Achievement: Gamification badges
+ * - CodeAnalysisResponse: AI analysis results
+ */
+
 import type { CodeVisualizationResponse, CodeDiagramResponse } from '../services/api';
 import type { CodeAnalysisResponse } from './index';
 
+/**
+ * Represents a single feedback item from AI analysis.
+ * Can be an error, warning, or suggestion.
+ */
 export interface FeedbackItem {
   id: string;
   line: number;
@@ -22,6 +39,18 @@ export interface Achievement {
   category: 'milestone' | 'streak' | 'quality' | 'learning';
 }
 
+/**
+ * Represents a document (code file) in the editor.
+ * Each tab in the multi-document workspace is a Document.
+ * 
+ * Contains:
+ * - Code content and language
+ * - History for undo/redo
+ * - AI feedback and analysis
+ * - Visualization and diagram data
+ * - Scores and achievements
+ * - AI chat messages
+ */
 export interface Document {
   id: string;
   title: string;

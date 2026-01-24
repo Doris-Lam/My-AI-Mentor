@@ -1,3 +1,24 @@
+"""
+Code Execution Service - Safe Sandboxed Code Execution
+
+This module provides safe execution of user-submitted code in various languages.
+It handles:
+- Multi-language support (Python, Java, C++, C, C#, Go, Rust, Ruby, PHP)
+- Sandboxed execution (temporary directories, timeouts)
+- Compilation for compiled languages
+- Error capture and reporting
+- Resource limits (timeout protection)
+
+Security Features:
+- Code runs in temporary directories (auto-cleaned)
+- Timeout protection (prevents infinite loops)
+- No network access (sandboxed)
+- Process isolation
+
+The service checks for required runtimes and provides helpful
+error messages if a language runtime is not installed.
+"""
+
 import subprocess
 import tempfile
 import os
@@ -8,6 +29,8 @@ from pathlib import Path
 from typing import Dict
 
 # Language execution configurations
+# Defines how to execute code for each supported language
+# Includes: command, file extension, timeout, and compilation steps
 EXECUTION_CONFIG = {
     'python': {
         'command': ['python3', '{file}'],
@@ -174,7 +197,28 @@ def normalize_code(code: str, language: str) -> str:
 def execute_code(code: str, language: str) -> Dict:
     """
     Execute code in a sandboxed environment with timeout and resource limits.
-    Returns output, error, exit_code, and execution_time.
+    
+    This function:
+    1. Validates the language is supported
+    2. Checks if required runtime is installed
+    3. Creates a temporary directory for execution
+    4. Writes code to a file
+    5. Compiles code (if needed for compiled languages)
+    6. Executes the code with timeout protection
+    7. Captures output, errors, and execution time
+    8. Cleans up temporary files
+    
+    Security:
+    - Code runs in isolated temporary directory
+    - Timeout prevents infinite loops
+    - Process isolation prevents system access
+    
+    Returns:
+        Dict with keys:
+            - output: stdout from code execution
+            - error: stderr or error message (None if successful)
+            - exit_code: Process exit code (0 = success)
+            - execution_time: Time taken in seconds
     """
     language = language.lower()
     

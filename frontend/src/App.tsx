@@ -1,3 +1,44 @@
+/**
+ * AI Coding Mentor - Main Application Component
+ * 
+ * This is the main React component that orchestrates the entire application.
+ * It's a comprehensive code editor with AI-powered features inspired by Grammarly.
+ * 
+ * Key Features:
+ * 1. Multi-Document Workspace - Tabbed interface for multiple code files
+ * 2. Monaco Editor Integration - VS Code's editor with syntax highlighting
+ * 3. Real-Time AI Analysis - Debounced code analysis as you type
+ * 4. Code Visualization - Step-by-step execution flow
+ * 5. Diagram Generation - Mermaid diagrams from code
+ * 6. Lesson Generation - Educational content based on code
+ * 7. Code Execution - Run code in sandboxed environment
+ * 8. Code Formatting - Beautify code automatically
+ * 9. Code Sharing - Generate shareable links
+ * 10. Metrics Dashboard - Comprehensive code statistics
+ * 
+ * Architecture:
+ * - Document-based state management (each tab is independent)
+ * - History tracking (undo/redo functionality)
+ * - Real-time feedback with visual decorations
+ * - Dark/light mode support
+ * - Responsive design
+ * 
+ * State Management:
+ * - documents: Array of Document objects (one per tab)
+ * - activeDocumentIndex: Currently selected tab
+ * - Various UI state (modals, panels, loading states)
+ * 
+ * The component is large (~3000+ lines) because it contains:
+ * - All UI rendering logic
+ * - All event handlers
+ * - All API integration
+ * - All state management
+ * 
+ * In a production app, this could be split into smaller components,
+ * but keeping it together makes the codebase easier to understand
+ * for learning purposes.
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { analyzeCode, generateCode, visualizeCode, generateDiagram, generateLesson, formatCode, executeCode, shareCode, getSharedCode, type CodeExecutionResponse } from './services/api';

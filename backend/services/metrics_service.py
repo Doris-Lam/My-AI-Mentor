@@ -1,3 +1,25 @@
+"""
+Code Metrics Service - Code Statistics and Analysis
+
+This module calculates comprehensive code metrics including:
+- Line counts (total, code, comments, blank)
+- Structure analysis (functions, classes, imports)
+- Complexity metrics (cyclomatic complexity, nesting depth)
+- Code distribution (percentages)
+- Line length statistics
+- Character counts
+
+The service uses language-specific parsers:
+- Python: AST parsing for accurate analysis
+- Other languages: Regex patterns for structure detection
+
+Metrics help developers understand:
+- Code maintainability
+- Complexity levels
+- Documentation coverage
+- Code structure
+"""
+
 import re
 import ast
 from typing import Dict, Any
@@ -5,8 +27,40 @@ from typing import Dict, Any
 
 def calculate_code_metrics(code: str, language: str) -> Dict[str, Any]:
     """
-    Calculate various code metrics for the given code.
-    Returns a dictionary with metrics like lines of code, complexity, etc.
+    Calculate comprehensive code metrics for the given code.
+    
+    This function analyzes code and returns detailed statistics:
+    
+    Line Metrics:
+    - Total lines (including blank)
+    - Code lines (executable statements)
+    - Comment lines (language-specific comment markers)
+    - Blank lines (empty lines)
+    
+    Structure Metrics:
+    - Function/method count
+    - Class count
+    - Import count
+    
+    Complexity Metrics:
+    - Cyclomatic complexity (decision points: if, for, while, etc.)
+    - Maximum nesting depth (indentation levels)
+    
+    Distribution Metrics:
+    - Code percentage (code vs comments/blank)
+    - Comment percentage
+    
+    Size Metrics:
+    - Average line length
+    - Longest line
+    - Total characters (with and without whitespace)
+    
+    Args:
+        code: The code to analyze
+        language: Programming language (for language-specific parsing)
+    
+    Returns:
+        Dict containing all calculated metrics
     """
     lines = code.split('\n')
     

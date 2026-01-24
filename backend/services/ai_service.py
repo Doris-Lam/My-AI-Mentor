@@ -1,10 +1,37 @@
-import google.generativeai as genai
+"""
+AI Service Module - Google Gemini Integration
+
+This module handles all AI interactions using Google's Gemini API.
+It provides functions for:
+- Code analysis and feedback
+- Code generation from natural language
+- Code visualization and explanation
+- Diagram generation (Mermaid format)
+- Educational lesson creation
+- Code formatting
+
+The service includes:
+- Model fallback logic (tries multiple models if one fails)
+- Error handling for API issues (rate limits, auth errors, etc.)
+- Response parsing and formatting
+- Language-specific prompt engineering
+
+Key Features:
+- Automatic model selection and fallback
+- Comprehensive error messages
+- Context-aware code analysis
+- Educational explanations
+"""
+
+from google import genai
 import re
+import time
 from config import get_settings
 
 settings = get_settings()
 
 # Language mapping for code blocks and prompts
+# Maps user-friendly language names to normalized codes for AI prompts
 language_map = {
     'python': 'python',
     'java': 'java',
@@ -31,15 +58,183 @@ display_names = {
     'rust': 'Rust',
 }
 
-# Configure Gemini (with fallback for missing API key)
+# Configure Gemini client (with fallback for missing API key)
+# The client is None if API key is not configured, allowing the app to run
+# but AI features will return error messages instead of working
 try:
     if settings.gemini_api_key and settings.gemini_api_key != "your_gemini_api_key_here":
-        genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        client = genai.Client(api_key=settings.gemini_api_key)
     else:
-        model = None
-except Exception:
-    model = None
+        client = None  # No API key configured
+except Exception as e:
+    print(f"Error configuring Gemini client: {e}")
+    client = None
+
+
+# Global variable to cache the working model
+# This avoids trying multiple models on every request once we find one that works
+_working_model = None  # Caches the last working model name
+_available_models_cache = None  # Caches list of available models from API
+
+def get_available_models():
+    """
+    Get list of available models from the API.
+    """
+    global _available_models_cache
+    
+    if _available_models_cache is not None:
+        return _available_models_cache
+    
+    if client is None:
+        return []
+    
+    try:
+        # Try to list available models
+        models = client.models.list()
+        _available_models_cache = [model.name.split('/')[-1] for model in models if hasattr(model, 'name')]
+        return _available_models_cache
+    except Exception as e:
+        print(f"Could not list available models: {e}")
+        # Return common model names as fallback
+        return ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"]
+
+def try_generate_content_with_fallback(prompt: str, config: dict = None, fallback_models: list = None):
+    """
+    Try to generate content with the configured model, falling back to alternative models if needed.
+    """
+    global _working_model
+    
+    if fallback_models is None:
+        # Try to get available models from API, otherwise use common names
+        available = get_available_models()
+        if available:
+            fallback_models = available
+        else:
+            # Common model name variations to try
+            fallback_models = [
+                "gemini-1.5-flash",  # Most common free-tier model
+                "gemini-1.5-pro",   # Pro version
+                "gemini-2.0-flash-exp",  # Experimental 2.0
+                "gemini-1.5-flash-001",  # Versioned model
+                "gemini-1.5-pro-001",   # Versioned pro
+            ]
+    
+    # Use cached working model if available, otherwise start with configured model
+    model_to_try = _working_model or settings.gemini_model
+    models_to_try = [model_to_try] + [m for m in fallback_models if m != model_to_try]
+    
+    last_error = None
+    tried_models = []
+    for model_name in models_to_try:
+        tried_models.append(model_name)
+        try:
+            print(f"Trying model: {model_name}")
+            if config:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=config
+                )
+            else:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
+            # Cache the working model for future calls
+            if model_name != settings.gemini_model:
+                print(f"Successfully using fallback model: {model_name} (configured: {settings.gemini_model})")
+            _working_model = model_name
+            return response
+        except Exception as e:
+            error_str = str(e)
+            print(f"Model {model_name} failed: {error_str[:200]}")
+            # If it's a 404/model not found, try next model
+            if '404' in error_str or 'not_found' in error_str.lower() or 'is not found' in error_str.lower():
+                last_error = e
+                continue
+            # For other errors, raise immediately
+            raise
+    
+    # If all models failed, try to get available models and suggest them
+    available = get_available_models()
+    tried_list = ", ".join(tried_models)
+    if available:
+        available_list = ", ".join(available[:5])
+        error_msg = f"Tried models: {tried_list}. None worked. Available models from API: {available_list}"
+    else:
+        error_msg = f"Tried models: {tried_list}. All failed. Please check your API key and model availability. You may need to update GEMINI_MODEL in .env to a model that exists in your region/API version."
+    
+    # Attach the tried models info to the exception
+    if last_error:
+        last_error.tried_models = tried_models
+        last_error.available_models = available
+    raise Exception(error_msg) if last_error is None else last_error
+
+
+def handle_api_error(error: Exception) -> dict:
+    """
+    Handle API errors and return user-friendly error messages.
+    """
+    error_str = str(error)
+    error_lower = error_str.lower()
+    
+    # Check for model not found errors (404)
+    if '404' in error_str or 'not_found' in error_lower or 'is not found' in error_lower:
+        available = get_available_models()
+        if available:
+            models_list = ", ".join(available[:5])
+            message = f"The specified model is not available. Available models include: {models_list}. Please update GEMINI_MODEL in your .env file."
+        else:
+            message = "The specified model is not available. Common model names to try: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash-exp. Please check your GEMINI_MODEL setting in .env file."
+        return {
+            "error_type": "model_not_found",
+            "message": message
+        }
+    
+    # Check for rate limit/quota errors
+    if '429' in error_str or 'resource_exhausted' in error_lower or 'quota' in error_lower:
+        # Extract retry delay if available
+        retry_delay = None
+        if 'retry' in error_lower and 'delay' in error_lower:
+            try:
+                # Try to extract seconds from error message
+                import re as regex_module
+                delay_match = regex_module.search(r'(\d+\.?\d*)\s*s', error_str)
+                if delay_match:
+                    retry_delay = float(delay_match.group(1))
+            except:
+                pass
+        
+        message = "API quota exceeded. "
+        if retry_delay:
+            message += f"Please wait {int(retry_delay)} seconds before trying again. "
+        else:
+            message += "Please wait a few minutes before trying again. "
+        
+        message += "If you're on the free tier, consider:\n"
+        message += "1. Using a free-tier compatible model (gemini-1.5-flash-latest)\n"
+        message += "2. Waiting for your quota to reset\n"
+        message += "3. Upgrading your Google Cloud plan for higher limits\n"
+        message += "4. Check your usage at: https://ai.dev/rate-limit"
+        
+        return {
+            "error_type": "quota_exceeded",
+            "message": message,
+            "retry_after": retry_delay
+        }
+    
+    # Check for authentication errors
+    if '401' in error_str or 'unauthorized' in error_lower or 'invalid api key' in error_lower:
+        return {
+            "error_type": "authentication",
+            "message": "Invalid API key. Please check your GEMINI_API_KEY in the .env file."
+        }
+    
+    # Generic error
+    return {
+        "error_type": "api_error",
+        "message": f"API error: {error_str}"
+    }
 
 
 def parse_score(score_text: str) -> dict:
@@ -178,7 +373,7 @@ Pay special attention to {display_name}-specific syntax, conventions, and best p
 
     try:
         # Check if Gemini is available
-        if model is None:
+        if client is None:
             return {
                 "errors": "No AI service configured. Please set GEMINI_API_KEY in your .env file.",
                 "suggestions": "To enable AI analysis, add your Gemini API key to the .env file.",
@@ -192,16 +387,31 @@ Pay special attention to {display_name}-specific syntax, conventions, and best p
             }
         
         # Use Gemini API with higher token limit for comprehensive analysis
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.5,  # Lower temperature for more focused, accurate suggestions
-                max_output_tokens=4000,  # Increased for comprehensive analysis of full code
-                top_p=0.95,
-                top_k=40,
+        try:
+            response = try_generate_content_with_fallback(
+                prompt,
+                config={
+                    'temperature': 0.5,  # Lower temperature for more focused, accurate suggestions
+                    'max_output_tokens': 4000,  # Increased for comprehensive analysis of full code
+                    'top_p': 0.95,
+                    'top_k': 40,
+                }
             )
-        )
-        content = response.text
+            content = response.text
+        except Exception as api_error:
+            error_info = handle_api_error(api_error)
+            return {
+                "errors": error_info["message"],
+                "suggestions": "Unable to generate suggestions due to API error.",
+                "test_cases": "Unable to generate test cases due to API error.",
+                "explanation": "Unable to generate explanation due to API error.",
+                "correctness_score": 0,
+                "clarity_score": 0,
+                "best_practices_score": 0,
+                "performance_score": 0,
+                "overall_score": 0,
+                "error_type": error_info.get("error_type", "unknown")
+            }
         
         if format:
             # Parse formatted code response
@@ -271,8 +481,9 @@ Pay special attention to {display_name}-specific syntax, conventions, and best p
             return sections
         
     except Exception as e:
+        error_info = handle_api_error(e)
         return {
-            "errors": f"Error communicating with Gemini AI: {str(e)}",
+            "errors": error_info["message"],
             "suggestions": "Unable to generate suggestions due to API error.",
             "test_cases": "Unable to generate test cases due to API error.",
             "explanation": "Unable to generate explanation due to API error.",
@@ -280,7 +491,8 @@ Pay special attention to {display_name}-specific syntax, conventions, and best p
             "clarity_score": 0,
             "best_practices_score": 0,
             "performance_score": 0,
-            "overall_score": 0
+            "overall_score": 0,
+            "error_type": error_info.get("error_type", "unknown")
         }
 
 
@@ -288,7 +500,7 @@ async def generate_code(prompt: str, language: str, context: str = None) -> dict
     """
     Generate code based on a natural language prompt.
     """
-    if not model:
+    if not client:
         return {
             "generated_code": f"# AI service not configured. Please set GEMINI_API_KEY.\n# Requested: {prompt}",
             "explanation": "AI service is not configured. Please set your GEMINI_API_KEY environment variable."
@@ -312,8 +524,15 @@ Requirements:
         
         system_prompt += f"User request: {prompt}\n\nGenerate the {language} code:"
         
-        response = model.generate_content(system_prompt)
-        generated_code = response.text.strip()
+        try:
+            response = try_generate_content_with_fallback(system_prompt)
+            generated_code = response.text.strip()
+        except Exception as api_error:
+            error_info = handle_api_error(api_error)
+            return {
+                "generated_code": f"# Error: {error_info['message']}",
+                "explanation": error_info['message']
+            }
         
         # Extract code blocks if present
         if "```" in generated_code:
@@ -330,8 +549,12 @@ Requirements:
         
         # Generate explanation
         explanation_prompt = f"Explain what this {language} code does in one sentence:\n\n```{language}\n{generated_code}\n```"
-        explanation_response = model.generate_content(explanation_prompt)
-        explanation = explanation_response.text.strip()
+        try:
+            explanation_response = try_generate_content_with_fallback(explanation_prompt)
+            explanation = explanation_response.text.strip()
+        except Exception as api_error:
+            error_info = handle_api_error(api_error)
+            explanation = f"Code generated but explanation failed: {error_info['message']}"
         
         return {
             "generated_code": generated_code,
@@ -350,7 +573,7 @@ async def visualize_code(code: str, language: str) -> dict:
     """
     Visualize code execution flow and explain how the code works step by step.
     """
-    if not model:
+    if not client:
         return {
             "steps": [],
             "explanation": "AI service is not configured. Please set your GEMINI_API_KEY environment variable.",
@@ -404,16 +627,24 @@ FLOW_DIAGRAM:
 Focus on making it easy to understand for someone learning to code. Show the exact order of execution and how data flows through the program.
 """
         
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.5,
-                max_output_tokens=4000,
-                top_p=0.95,
-                top_k=40,
+        try:
+            response = try_generate_content_with_fallback(
+                prompt,
+                config={
+                    'temperature': 0.5,
+                    'max_output_tokens': 4000,
+                    'top_p': 0.95,
+                    'top_k': 40,
+                }
             )
-        )
-        content = response.text
+            content = response.text
+        except Exception as api_error:
+            error_info = handle_api_error(api_error)
+            return {
+                "steps": [],
+                "explanation": error_info['message'],
+                "flow_diagram": None
+            }
         
         # Parse the response
         sections = {
@@ -525,7 +756,7 @@ async def generate_diagram(code: str, language: str) -> dict:
     Generate a visual diagram (Mermaid format) representing the code structure.
     Can generate flowcharts, class diagrams, sequence diagrams, etc.
     """
-    if not model:
+    if not client:
         return {
             "diagram_code": "",
             "diagram_type": "flowchart",
@@ -623,14 +854,14 @@ Focus on making the diagram educational and helpful for understanding the code s
 """
         
         try:
-            response = model.generate_content(
+            response = try_generate_content_with_fallback(
                 prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.7,
-                    max_output_tokens=4000,
-                    top_p=0.95,
-                    top_k=40,
-                )
+                config={
+                    'temperature': 0.7,
+                    'max_output_tokens': 4000,
+                    'top_p': 0.95,
+                    'top_k': 40,
+                }
             )
             content = response.text
         except Exception as api_error:
@@ -911,7 +1142,11 @@ async def generate_lesson(code: str, language: str) -> dict:
     Generate an educational lesson teaching the core concepts and algorithms in the code.
     """
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        if not client:
+            return {
+                "lesson": "AI service is not configured. Please set your GEMINI_API_KEY environment variable.",
+                "concepts": []
+            }
         
         display_name = display_names.get(language.lower(), language.capitalize())
         normalized_lang = language_map.get(language.lower(), language.lower())
@@ -956,17 +1191,23 @@ IMPORTANT: This is a CONCEPT lesson, not a code walkthrough. Focus on teaching t
 Format with markdown-style headings (##, ###) and clear structure. Make it educational and engaging.
 """
         
-        response = model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.7,
-                "top_p": 0.95,
-                "top_k": 40,
-                "max_output_tokens": 4000,
+        try:
+            response = try_generate_content_with_fallback(
+                prompt,
+                config={
+                    "temperature": 0.7,
+                    "top_p": 0.95,
+                    "top_k": 40,
+                    "max_output_tokens": 4000,
+                }
+            )
+            lesson_text = response.text.strip()
+        except Exception as api_error:
+            error_info = handle_api_error(api_error)
+            return {
+                "lesson": error_info['message'],
+                "concepts": []
             }
-        )
-        
-        lesson_text = response.text.strip()
         
         # Extract concepts mentioned in the lesson
         concepts = []
@@ -1007,7 +1248,11 @@ async def format_code(code: str, language: str) -> dict:
     Format and beautify code according to language-specific style guidelines.
     """
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        if not client:
+            return {
+                "formatted_code": code,
+                "changes_made": False
+            }
         
         display_name = display_names.get(language.lower(), language.capitalize())
         normalized_lang = language_map.get(language.lower(), language.lower())
@@ -1039,17 +1284,24 @@ IMPORTANT:
 Format the code now:
 """
         
-        response = model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.1,  # Low temperature for consistent formatting
-                "top_p": 0.95,
-                "top_k": 40,
-                "max_output_tokens": 4000,
+        try:
+            response = try_generate_content_with_fallback(
+                prompt,
+                config={
+                    "temperature": 0.1,  # Low temperature for consistent formatting
+                    "top_p": 0.95,
+                    "top_k": 40,
+                    "max_output_tokens": 4000,
+                }
+            )
+            formatted_text = response.text.strip()
+        except Exception as api_error:
+            error_info = handle_api_error(api_error)
+            return {
+                "formatted_code": code,  # Return original code on error
+                "changes_made": False,
+                "error": error_info['message']
             }
-        )
-        
-        formatted_text = response.text.strip()
         
         # Extract code from markdown code block if present
         code_block_pattern = rf'```{normalized_lang}?\s*\n(.*?)\n```'
